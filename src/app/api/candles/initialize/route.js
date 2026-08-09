@@ -11,12 +11,9 @@ export async function POST() {
 
         await connectDB();
 
-
         const result = await initializeCandles();
 
-
         return NextResponse.json(result);
-
 
     } catch (error) {
 

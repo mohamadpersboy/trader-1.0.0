@@ -20,11 +20,13 @@ export async function initializeCandles({ countback = 1440 } = {}) {
 
         QuarterCandle.countDocuments({})]);
 
-
     // دریافت کندل های 1 دقیقه
     const minuteCandles = await fetchMinuteCandles({
         countback
     });
+
+    console.log('candle.service');
+
 
 
     if (!Array.isArray(minuteCandles) || minuteCandles.length === 0) {
@@ -263,7 +265,6 @@ export async function updateCandles() {
 
         quarterConfig.beginTime = lastQuarterCandle.time + 900;
 
-
         quarterConfig.lastIndex = lastQuarterCandle.index;
 
     }
@@ -280,7 +281,6 @@ export async function updateCandles() {
     ] = await Promise.all([
 
         fetchMinuteCandles(minuteConfig),
-
 
         fetchQuarterCandles(quarterConfig)
 
