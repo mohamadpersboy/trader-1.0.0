@@ -5,7 +5,7 @@ import connectDB from "@/lib/mongodb";
 import {initializeCandles} from "@/services/candles/candle.service";
 
 
-export async function POST() {
+export async function GET() {
 
     try {
 
