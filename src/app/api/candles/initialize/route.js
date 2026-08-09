@@ -5,13 +5,17 @@ import connectDB from "@/lib/mongodb";
 import {initializeCandles} from "@/services/candles/candle.service";
 
 
-export async function GET() {
+export async function GET(request) {
 
     try {
 
         await connectDB();
 
-        const result = await initializeCandles();
+        const {searchParams} = new URL(request.url);
+
+        const countback = searchParams.get("countback")
+
+        const result = await initializeCandles({countback});
 
         return NextResponse.json(result);
 

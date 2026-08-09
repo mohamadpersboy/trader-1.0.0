@@ -10,7 +10,6 @@ import {convertOneMinToFifteen} from "@/utils/candle-time";
 
 export async function initializeCandles({ countback = 1440 } = {}) {
 
-
     console.log("🔄 Starting initialize candles service...");
 
 
