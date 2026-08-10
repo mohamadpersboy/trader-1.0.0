@@ -3,17 +3,31 @@ import MinuteChoch from "@/models/minute-choch.model";
 import TempMinuteChoch from "@/models/temp-minute-choch.model";
 
 
-const {primary, secondary} = await getOrCreateTempChoch();
+//=======================================================================//
+//                          DETECT MINUTE CHOCH                          //
+//=======================================================================//
 
-const candles = await MinuteCandle
-    .find()
-    .sort({index: 1})
-    .lean();
+export async function detectMinuteChoch(fromIndex = 0) {
+
+    const {primary, secondary} = await getOrCreateTempChoch();
 
 
-for (const candle of candles) {
+    const candles = await MinuteCandle
+        .find({
+            index: {$gt: fromIndex},
+        })
+        .sort({index: 1})
+        .lean();
 
-    await chockDetector(candle, primary, secondary);
+
+    for (const candle of candles) {
+
+        await chockDetector(candle, primary, secondary);
+
+    }
+
+
+    return candles;
 
 }
 
