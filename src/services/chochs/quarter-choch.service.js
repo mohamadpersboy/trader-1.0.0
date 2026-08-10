@@ -3,17 +3,31 @@ import QuarterChoch from "@/models/quarter-choch.model";
 import TempQuarterChoch from "@/models/temp-quarter-choch.model";
 
 
-const {primary, secondary} = await getOrCreateTempChoch();
+//=======================================================================//
+//                         DETECT QUARTER CHOCH                          //
+//=======================================================================//
 
-const candles = await QuarterCandle
-    .find()
-    .sort({index: 1})
-    .lean();
+export async function detectQuarterChoch(fromIndex = 0) {
+
+    const {primary, secondary} = await getOrCreateTempChoch();
 
 
-for (const candle of candles) {
+    const candles = await QuarterCandle
+        .find({
+            index: {$gt: fromIndex},
+        })
+        .sort({index: 1})
+        .lean();
 
-    await chockDetector(candle, primary, secondary);
+
+    for (const candle of candles) {
+
+        await chockDetector(candle, primary, secondary);
+
+    }
+
+
+    return candles;
 
 }
 
