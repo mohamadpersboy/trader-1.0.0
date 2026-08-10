@@ -226,7 +226,7 @@ export async function chockDetector(candle, primary, secondary) {
 
                 if (secondary.base && secondary.break && secondary.min) {
 
-                    await resetChoch(primary._id, "bearish");
+                    await resetChoch(primary, "bearish");
 
 
                     primary.base = secondary.base;
@@ -234,7 +234,7 @@ export async function chockDetector(candle, primary, secondary) {
                     primary.min = secondary.min;
 
 
-                    await resetChoch(secondary._id, "bearish");
+                    await resetChoch(secondary, "bearish");
 
                 }
 
@@ -258,10 +258,10 @@ export async function chockDetector(candle, primary, secondary) {
             const choch = await createChochFromPrimary(primary);
 
 
-            await resetChoch(primary._id, "bullish");
+            await resetChoch(primary, "bullish");
 
 
-            await resetChoch(secondary._id, "");
+            await resetChoch(secondary, "");
 
 
             return choch;
@@ -473,7 +473,7 @@ export async function chockDetector(candle, primary, secondary) {
 
                 if (secondary.base !== null && secondary.break !== null && secondary.max !== null) {
 
-                    await resetChoch(primary._id, "bullish");
+                    await resetChoch(primary, "bullish");
 
 
                     primary.base = secondary.base;
@@ -481,7 +481,7 @@ export async function chockDetector(candle, primary, secondary) {
                     primary.max = secondary.max;
 
 
-                    await resetChoch(secondary._id, "bullish");
+                    await resetChoch(secondary, "bullish");
 
                 }
 
@@ -535,10 +535,10 @@ export async function chockDetector(candle, primary, secondary) {
                     const choch = await createChochFromPrimary(primary);
 
 
-                    await resetChoch(primary._id, "bearish");
+                    await resetChoch(primary, "bearish");
 
 
-                    await resetChoch(secondary._id, "");
+                    await resetChoch(secondary, "");
 
 
                     return choch;
@@ -659,7 +659,7 @@ async function createBearishSpecialChoch(candle, primary) {
     const choch = await createChochFromPrimary(primary);
 
 
-    await resetChoch(primary._id, "bullish");
+    await resetChoch(primary, "bullish");
 
 
     return choch;
@@ -704,7 +704,7 @@ async function createBullishSpecialChoch(candle, primary) {
     const choch = await createChochFromPrimary(primary);
 
 
-    await resetChoch(primary._id, "bearish");
+    await resetChoch(primary, "bearish");
 
 
     return choch;
@@ -748,23 +748,26 @@ async function createChochFromPrimary(primary) {
 //                              RESET CHOCH                               //
 //=======================================================================//
 
-async function resetChoch(id, type) {
+async function resetChoch(doc, type) {
 
     try {
 
-        return await TempQuarterChoch.findByIdAndUpdate(id, {
-            type,
+        doc.type = type;
 
-            base: null, break: null,
+        doc.base = null;
+        doc.break = null;
 
-            min: null, max: null,
+        doc.min = null;
+        doc.max = null;
 
-            bearishCh: null, bullishCh: null,
+        doc.bearishCh = null;
+        doc.bullishCh = null;
 
-            breakMin: false, breakMax: false,
-        }, {
-            new: true,
-        });
+        doc.breakMin = false;
+        doc.breakMax = false;
+
+
+        return await doc.save();
 
     } catch (error) {
 
