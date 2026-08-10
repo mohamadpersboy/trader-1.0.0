@@ -4,18 +4,31 @@ import TempBos from "@/models/temp-bos.model";
 import Bos from "@/models/bos.model";
 
 
-const {primary, secondary} = await getOrCreateTempBos();
+//=======================================================================//
+//                             DETECT BOS                                //
+//=======================================================================//
+
+export async function detectBos(fromIndex = 0) {
+
+    const {bearishBOS, bullishBOS} = await getOrCreateTempBos();
 
 
-const candles = await MinuteCandle
-    .find()
-    .sort({index: 1})
-    .lean();
+    const candles = await MinuteCandle
+        .find({
+            index: {$gt: fromIndex},
+        })
+        .sort({index: 1})
+        .lean();
 
 
-for (const candle of candles) {
+    for (const candle of candles) {
 
-    await bosDetector(candle, primary, secondary);
+        await bosDetector(candle, bearishBOS, bullishBOS);
+
+    }
+
+
+    return candles;
 
 }
 //=======================================================================//
