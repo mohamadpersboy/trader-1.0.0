@@ -55,22 +55,22 @@ const chochSchema = new Schema(
 
         base: {
             type: timeSeriesDataSchema,
-            required: true,
+            required: false,
         },
 
         break: {
             type: timeSeriesDataSchema,
-            required: true,
+            required: false,
         },
 
         min: {
             type: timeSeriesDataSchema,
-            required: true,
+            required: false,
         },
 
         max: {
             type: timeSeriesDataSchema,
-            required: true,
+            required: false,
         },
 
         bullishCh: {
