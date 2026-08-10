@@ -1,8 +1,16 @@
 import {NextResponse} from "next/server";
 
+import connectDB from "@/lib/mongodb";
+
+import MinuteCandle from "@/models/minute-candle.model";
+import QuarterCandle from "@/models/quarter-candle.model";
 import Bos from "@/models/bos.model";
 import TempBos from "@/models/temp-bos.model";
 import Config from "@/models/config.model";
+
+import {detectBos} from "@/services/bos/bos.service";
+import {detectMinuteChoch} from "@/services/chochs/minute-choch.service";
+import {detectQuarterChoch} from "@/services/chochs/quarter-choch.service";
 
 
 //=======================================================================//
@@ -17,6 +25,9 @@ import Config from "@/models/config.model";
 export async function GET(request) {
 
     try {
+
+        await connectDB();
+
 
         const {searchParams} = new URL(request.url);
 
@@ -36,6 +47,121 @@ export async function GET(request) {
         const sort = parseInt(
             searchParams.get("sort") || "1"
         );
+
+
+        //===================================================================//
+        //                       LOAD / CREATE CONFIG                        //
+        //===================================================================//
+
+        let config = await Config.findOne();
+
+
+        if (!config) {
+            config = await Config.create({});
+        }
+
+
+        //===================================================================//
+        //   ENSURE MINUTE & QUARTER CHOCH ARE CHECKED UP TO LAST CANDLE     //
+        //                    (RUN CONCURRENTLY)                             //
+        //===================================================================//
+
+        const [
+            lastMinuteCandle,
+            lastQuarterCandle,
+        ] = await Promise.all([
+
+            MinuteCandle
+                .findOne()
+                .sort({index: -1})
+                .lean(),
+
+            QuarterCandle
+                .findOne()
+                .sort({index: -1})
+                .lean(),
+
+        ]);
+
+        const lastMinuteCandleIndex = lastMinuteCandle?.index ?? 0;
+        const lastQuarterCandleIndex = lastQuarterCandle?.index ?? 0;
+
+
+        const chochChecks = [];
+
+
+        if ((config.lastMinuteChochCheckIndex || 0) < lastMinuteCandleIndex) {
+
+            chochChecks.push(
+
+                detectMinuteChoch(config.lastMinuteChochCheckIndex || 0)
+                    .then((processedCandles) => {
+
+                        if (processedCandles.length > 0) {
+
+                            config.lastMinuteChochCheckIndex =
+                                processedCandles[processedCandles.length - 1].index;
+
+                        }
+
+                    })
+
+            );
+
+        }
+
+
+        if ((config.lastQuarterChochCheckIndex || 0) < lastQuarterCandleIndex) {
+
+            chochChecks.push(
+
+                detectQuarterChoch(config.lastQuarterChochCheckIndex || 0)
+                    .then((processedCandles) => {
+
+                        if (processedCandles.length > 0) {
+
+                            config.lastQuarterChochCheckIndex =
+                                processedCandles[processedCandles.length - 1].index;
+
+                        }
+
+                    })
+
+            );
+
+        }
+
+
+        if (chochChecks.length > 0) {
+
+            //-------------------------------------------------------------------//
+            //         RUN MINUTE & QUARTER CHOCH DETECTION IN PARALLEL          //
+            //-------------------------------------------------------------------//
+
+            await Promise.all(chochChecks);
+
+            await config.save();
+
+        }
+
+
+        //===================================================================//
+        //                          DETECT NEW BOS                           //
+        //===================================================================//
+
+        const processedBosCandles = await detectBos(
+            config.lastBosCheckIndex || 0
+        );
+
+
+        if (processedBosCandles.length > 0) {
+
+            config.lastBosCheckIndex =
+                processedBosCandles[processedBosCandles.length - 1].index;
+
+            await config.save();
+
+        }
 
 
         //===================================================================//
@@ -132,6 +258,9 @@ export async function DELETE() {
 
     try {
 
+        await connectDB();
+
+
         console.log("🔄 Starting clearBosController execution...");
 
 
@@ -223,4 +352,3 @@ export async function DELETE() {
     }
 
 }
-
