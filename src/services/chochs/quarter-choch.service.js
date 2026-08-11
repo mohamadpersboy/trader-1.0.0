@@ -717,10 +717,13 @@ async function createBullishSpecialChoch(candle, primary) {
 
 async function createChochFromPrimary(primary) {
 
-    // چون یک CHOCH یا از bearishCh یا از bullishCh (یا هر دو، در حالت
-    // special) ساخته می‌شه، هر کدوم موجود بود رو به‌عنوان index رکورد
-    // در نظر می‌گیریم - این فیلد برای مرتب‌سازی صحیح "آخرین CHOCH" لازمه.
-    const index = primary.bearishCh?.index ?? primary.bullishCh?.index;
+    // توی حالت special، هم bearishCh و هم bullishCh پر می‌شن (یکی قرضیه از
+    // آخرین CHOCH، یکی نقطه‌ی واقعیِ همین CHOCH). پس باید بر اساس primary.type
+    // (که در این لحظه هنوز به نوع فعلی اشاره می‌کنه، چون resetChoch بعداً
+    // صدا زده می‌شه) نقطه‌ی صحیح رو انتخاب کنیم، نه صرفاً هر کدوم که null نبود.
+    const index = primary.type === "bearish"
+        ? (primary.bearishCh?.index ?? primary.bullishCh?.index)
+        : (primary.bullishCh?.index ?? primary.bearishCh?.index);
 
     const chochData = {
 
