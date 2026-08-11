@@ -632,7 +632,7 @@ async function createBearishSpecialChoch(candle, primary) {
         .sort({index: -1});
 
 
-    if (!lastChoch?.min) {
+    if (!lastChoch?.min || !lastChoch?.bullishCh) {
         return null;
     }
 
@@ -677,7 +677,7 @@ async function createBullishSpecialChoch(candle, primary) {
         .sort({index: -1});
 
 
-    if (!lastChoch?.max) {
+    if (!lastChoch?.max || !lastChoch?.bearishCh) {
         return null;
     }
 
@@ -717,7 +717,14 @@ async function createBullishSpecialChoch(candle, primary) {
 
 async function createChochFromPrimary(primary) {
 
+    // چون یک CHOCH یا از bearishCh یا از bullishCh (یا هر دو، در حالت
+    // special) ساخته می‌شه، هر کدوم موجود بود رو به‌عنوان index رکورد
+    // در نظر می‌گیریم - این فیلد برای مرتب‌سازی صحیح "آخرین CHOCH" لازمه.
+    const index = primary.bearishCh?.index ?? primary.bullishCh?.index;
+
     const chochData = {
+
+        index,
 
         type: primary.type,
 
