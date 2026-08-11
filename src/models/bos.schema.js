@@ -66,7 +66,7 @@ const bosSchema = new Schema(
 
         update: {
             type: timeSeriesDataSchema,
-            required: true,
+            required: false,
         },
 
         close: {
@@ -76,12 +76,12 @@ const bosSchema = new Schema(
 
         min: {
             type: timeSeriesDataSchema,
-            required: true,
+            required: false,
         },
 
         max: {
             type: timeSeriesDataSchema,
-            required: true,
+            required: false,
         },
 
         percents50: {
