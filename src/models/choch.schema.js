@@ -47,6 +47,12 @@ const timeSeriesDataSchema = new Schema(
 
 const chochSchema = new Schema(
     {
+        index: {
+            type: Number,
+            required: true,
+            index: true,
+        },
+
         type: {
             type: String,
             required: true,
