@@ -601,6 +601,25 @@ async function closeBearishBOS(candle, bearishBOS, bullishBOS) {
 
 
     //-------------------------------------------------------------------//
+    //            SET MIN (bearish structure's min = its open)           //
+    //-------------------------------------------------------------------//
+    // bearishBOS.open از ابتدا همون نقطه‌ی min ساختار bearish هست (همون
+    // چیزی که برای محاسبه‌ی percents50 هم به‌عنوان minLow استفاده می‌شه).
+
+    if (!bearishBOS.min) {
+        bearishBOS.min = bearishBOS.open;
+    }
+
+
+    //-------------------------------------------------------------------//
+    //                    SET START / END TIME                           //
+    //-------------------------------------------------------------------//
+
+    bearishBOS.startTime = bearishBOS.open.time;
+    bearishBOS.endTime = bearishBOS.close.time;
+
+
+    //-------------------------------------------------------------------//
     //                  FIND RETURN & STANDARD BOS                       //
     //-------------------------------------------------------------------//
 
@@ -652,7 +671,7 @@ async function closeBearishBOS(candle, bearishBOS, bullishBOS) {
 
         startTime: bearishBOS.startTime,
 
-        endTime: bearishBOS.toTime,
+        endTime: bearishBOS.endTime,
     };
 
 
@@ -722,6 +741,25 @@ async function closeBullishBOS(candle, bullishBOS, bearishBOS) {
 
 
     //-------------------------------------------------------------------//
+    //            SET MAX (bullish structure's max = its open)           //
+    //-------------------------------------------------------------------//
+    // bullishBOS.open از ابتدا همون نقطه‌ی max ساختار bullish هست (همون
+    // چیزی که برای محاسبه‌ی percents50 هم به‌عنوان maxHigh استفاده می‌شه).
+
+    if (!bullishBOS.max) {
+        bullishBOS.max = bullishBOS.open;
+    }
+
+
+    //-------------------------------------------------------------------//
+    //                    SET START / END TIME                           //
+    //-------------------------------------------------------------------//
+
+    bullishBOS.startTime = bullishBOS.open.time;
+    bullishBOS.endTime = bullishBOS.close.time;
+
+
+    //-------------------------------------------------------------------//
     //                  FIND RETURN & STANDARD BOS                       //
     //-------------------------------------------------------------------//
 
@@ -773,7 +811,7 @@ async function closeBullishBOS(candle, bullishBOS, bearishBOS) {
 
         startTime: bullishBOS.startTime,
 
-        endTime: bullishBOS.toTime,
+        endTime: bullishBOS.endTime,
     };
 
 
