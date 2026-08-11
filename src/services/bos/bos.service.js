@@ -620,6 +620,8 @@ async function closeBearishBOS(candle, bearishBOS, bullishBOS) {
     //-------------------------------------------------------------------//
 
     const bosData = {
+        index: bearishBOS.close.index,
+
         type: bearishBOS.type,
 
         open: bearishBOS.open,
@@ -739,6 +741,8 @@ async function closeBullishBOS(candle, bullishBOS, bearishBOS) {
     //-------------------------------------------------------------------//
 
     const bosData = {
+        index: bullishBOS.close.index,
+
         type: bullishBOS.type,
 
         open: bullishBOS.open,
