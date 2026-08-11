@@ -395,7 +395,11 @@ export async function bosDetector(candle, bearishBOS, bullishBOS) {
 
                 if (bearishBOS.update.low > candle.close) {
 
-                    await closeBearishBOS();
+                    await closeBearishBOS(
+                        candle,
+                        bearishBOS,
+                        bullishBOS
+                    );
 
                 } else {
 
@@ -411,7 +415,11 @@ export async function bosDetector(candle, bearishBOS, bullishBOS) {
 
                 if (bearishBOS.open.low > candle.close) {
 
-                    await closeBearishBOS();
+                    await closeBearishBOS(
+                        candle,
+                        bearishBOS,
+                        bullishBOS
+                    );
 
                 } else {
 
@@ -800,21 +808,26 @@ async function resetBOS(bos, type) {
 
     try {
 
-        return await TempBos.findByIdAndUpdate(bos._id, {
-            type,
+        bos.type = type;
 
-            open: null, update: null, close: null,
+        bos.open = null;
+        bos.update = null;
+        bos.close = null;
 
-            min: null, max: null,
+        bos.min = null;
+        bos.max = null;
 
-            percents50: 0,
+        bos.percents50 = 0;
 
-            standard: true, return: false, isMatched: false,
+        bos.standard = true;
+        bos.return = false;
+        bos.isMatched = false;
 
-            startTime: null, endTime: null,
-        }, {
-            new: true,
-        });
+        bos.startTime = null;
+        bos.endTime = null;
+
+
+        return await bos.save();
 
     } catch (error) {
 
