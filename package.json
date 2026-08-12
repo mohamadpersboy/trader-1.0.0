@@ -10,6 +10,8 @@
     "runtime": "node src/runtime/live-runtime.mjs"
   },
   "dependencies": {
+    "@appica/icons-react": "^1.0.0",
+    "@appica/ui-react": "^1.1.0",
     "axios": "^1.19.0",
     "mongoose": "^9.9.1",
     "mongoose-paginate-v2": "^1.9.5",
