@@ -148,16 +148,23 @@ export async function GET(request) {
         //===================================================================//
         //                          DETECT NEW BOS                           //
         //===================================================================//
+        // detectBos همیشه یک آبجکت ثابت برمی‌گردونه (نه گاهی آرایه، نه گاهی
+        // خود سند bos) - lastIndex همیشه معتبره، چه زودتر متوقف شده باشیم
+        // (stoppedEarly، به‌خاطر FVG/OB هنوز تأیید نشده) چه کل بازه رو
+        // پردازش کرده باشیم.
 
-        const processedBosCandles = await detectBos(
+        const bosResult = await detectBos(
             config.lastBosCheckIndex || 0
         );
 
 
-        if (processedBosCandles.length > 0) {
+        if (
+            bosResult.lastIndex !== null &&
+            bosResult.lastIndex !== undefined &&
+            bosResult.lastIndex > (config.lastBosCheckIndex || 0)
+        ) {
 
-            config.lastBosCheckIndex =
-                processedBosCandles[processedBosCandles.length - 1].index;
+            config.lastBosCheckIndex = bosResult.lastIndex;
 
             await config.save();
 
@@ -167,6 +174,8 @@ export async function GET(request) {
         //===================================================================//
         //                         PAGINATE OPTIONS                          //
         //===================================================================//
+        // populate می‌کنیم تا خود لیست BOS شامل FVG ها و OB های هر رکورد هم
+        // باشه (بدون نیاز به یه درخواست جدا برای هر BOS).
 
         const options = {
 
@@ -179,6 +188,11 @@ export async function GET(request) {
             },
 
             lean: true,
+
+            populate: [
+                {path: "fvgs"},
+                {path: "obs"},
+            ],
 
         };
 
