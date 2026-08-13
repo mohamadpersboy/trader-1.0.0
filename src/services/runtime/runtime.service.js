@@ -222,19 +222,27 @@ async function runChochDetection(config, {hasNewMinuteCandle, hasNewQuarterCandl
 
 async function runBosDetection(config) {
 
-    const processed = await detectBos(config.lastBosCheckIndex || 0);
+    // detectBos همیشه {lastIndex, bosProcessed, stoppedEarly, ...} برمی‌گردونه
+    // (نه آرایه) - lastIndex معتبره حتی وقتی stoppedEarly باشه (به‌خاطر یک
+    // FVG/OB هنوز تأیید نشده)، چون تا همون‌جا واقعاً کندل‌ها بررسی شدن.
+
+    const result = await detectBos(config.lastBosCheckIndex || 0);
 
 
-    if (processed.length > 0) {
+    if (
+        result.lastIndex !== null &&
+        result.lastIndex !== undefined &&
+        result.lastIndex > (config.lastBosCheckIndex || 0)
+    ) {
 
-        config.lastBosCheckIndex =
-            processed[processed.length - 1].index;
+        config.lastBosCheckIndex = result.lastIndex;
 
     }
 
 
     return {
-        bosProcessed: processed.length,
+        bosProcessed: result.bosProcessed,
+        stoppedEarly: result.stoppedEarly,
     };
 
 }
