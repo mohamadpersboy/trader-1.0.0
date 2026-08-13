@@ -235,7 +235,7 @@ export async function bosDetector(candle, bearishBOS, bullishBOS) {
         //                         FIND LAST BOS                              //
         //-------------------------------------------------------------------//
 
-        const lastBos = await Bos
+        const lastBos = await BosModel
             .findOne({
                 "close.index": {
                     $exists: true,
@@ -334,7 +334,7 @@ export async function bosDetector(candle, bearishBOS, bullishBOS) {
         //                         FIND LAST BOS                              //
         //-------------------------------------------------------------------//
 
-        const lastBos = await Bos
+        const lastBos = await BosModel
             .findOne({
                 "close.index": {
                     $exists: true,
@@ -771,7 +771,7 @@ async function closeBearishBOS(candle, bearishBOS, bullishBOS) {
     //                  FIND RETURN & STANDARD BOS                       //
     //-------------------------------------------------------------------//
 
-    const lastBos = await Bos
+    const lastBos = await BosModel
         .findOne()
         .sort({
             "close.index": -1,
@@ -823,7 +823,7 @@ async function closeBearishBOS(candle, bearishBOS, bullishBOS) {
     };
 
 
-    const bos = await Bos.create(bosData);
+    const bos = await BosModel.create(bosData);
 
 
     //-------------------------------------------------------------------//
@@ -911,7 +911,7 @@ async function closeBullishBOS(candle, bullishBOS, bearishBOS) {
     //                  FIND RETURN & STANDARD BOS                       //
     //-------------------------------------------------------------------//
 
-    const lastBos = await Bos
+    const lastBos = await BosModel
         .findOne()
         .sort({
             "close.index": -1,
@@ -963,7 +963,7 @@ async function closeBullishBOS(candle, bullishBOS, bearishBOS) {
     };
 
 
-    const bos = await Bos.create(bosData);
+    const bos = await BosModel.create(bosData);
 
 
     //-------------------------------------------------------------------//
