@@ -138,4 +138,12 @@ bosSchema.virtual("fvgs", {
 });
 
 
+bosSchema.virtual("obs", {
+    ref: "ObModel",
+    localField: "_id",
+    foreignField: "bosId",
+    justOne: true,
+});
+
+
 export default bosSchema;
