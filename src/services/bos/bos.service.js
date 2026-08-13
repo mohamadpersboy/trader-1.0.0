@@ -43,7 +43,7 @@ export async function detectBos(fromIndex = 0) {
         })
         .lean();
 
-    let processedBos = 0;
+    let bosProcessed = 0;
 
     let lastIndex = fromIndex;
 
@@ -63,7 +63,7 @@ export async function detectBos(fromIndex = 0) {
             continue;
         }
 
-        processedBos++;
+        bosProcessed++;
 
         //===============================================================
         // CHECK CHOCH
