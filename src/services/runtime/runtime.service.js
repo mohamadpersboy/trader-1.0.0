@@ -11,20 +11,20 @@
 //  نمی‌شناسه) قابل import باشه؛ importهای نسبی توی هر دو محیط کار می‌کنن.
 // ============================================================================
 
-import connectDB from "../../lib/mongodb.js";
+import connectDB from "@/lib/mongodb.js";
 
-import Config from "../../models/config.model.js";
-import MinuteCandle from "../../models/minute-candle.model.js";
-import QuarterCandle from "../../models/quarter-candle.model.js";
+import Config from "@/models/config.model.js";
+import MinuteCandle from "@/models/minute-candle.model.js";
+import QuarterCandle from "@/models/quarter-candle.model.js";
 
-import fetchMinuteCandles from "../candles/fetch-minute-candles.js";
-import fetchQuarterCandles from "../candles/fetch-quarter-candles.js";
+import fetchMinuteCandles from "@/services/candles/fetch-minute-candles.js";
+import fetchQuarterCandles from "@/services/candles/fetch-quarter-candles.js";
 
-import {convertOneMinToFifteen} from "../../utils/candle-time.js";
+import {convertOneMinToFifteen} from "@/utils/candle-time.js";
 
-import {detectMinuteChoch} from "../chochs/minute-choch.service.js";
-import {detectQuarterChoch} from "../chochs/quarter-choch.service.js";
-import {detectBos} from "../bos/bos.service.js";
+import {detectMinuteChoch} from "@/services/chochs/minute-choch.service.js";
+import {detectQuarterChoch} from "@/services/chochs/quarter-choch.service.js";
+import {detectBos} from "@/services/bos/bos.service.js";
 
 
 //=======================================================================//
@@ -104,6 +104,7 @@ async function fetchAndStoreMatchingQuarterCandle(minuteCandle) {
 
 
     const fetchOptions = {
+        countback: 0,
         beginTime,
     };
 

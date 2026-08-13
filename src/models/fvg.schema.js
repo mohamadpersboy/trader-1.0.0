@@ -1,4 +1,5 @@
-import { Schema } from "mongoose";
+import {Schema} from "mongoose";
+import mongoosePaginate from "mongoose-paginate-v2";
 
 const fvgItemSchema = new Schema(
     {
@@ -62,5 +63,7 @@ const fvgSchema = new Schema(
         timestamps: true,
     }
 );
+
+fvgSchema.plugin(mongoosePaginate);
 
 export default fvgSchema;

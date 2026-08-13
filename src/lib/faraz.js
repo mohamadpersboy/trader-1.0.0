@@ -3,6 +3,7 @@ const {
     FARAZ_SYMBOL,
     FARAZ_SESSION,
     FARAZ_X_ACCESS_TOKEN,
+    FARAZ_LOGIN_STORE,
 } = process.env;
 
 const farazConfig = {
@@ -14,7 +15,7 @@ const farazConfig = {
         "User-Agent": "Mozilla/5.0",
         Accept: "application/json, text/plain, */*",
         Connection: "keep-alive",
-        Cookie: `farazSession=${FARAZ_SESSION}; x-access-token=${FARAZ_X_ACCESS_TOKEN}`,
+        Cookie: `farazSession=${FARAZ_SESSION}; x-access-token=${FARAZ_X_ACCESS_TOKEN} ; faraz-login-store=${FARAZ_LOGIN_STORE}`,
     },
 };
 

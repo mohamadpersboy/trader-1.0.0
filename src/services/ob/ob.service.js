@@ -1,52 +1,171 @@
-export default function detectOB(type, candles, fvgs) {
+import { convertOneMinToFifteen } from "@/utils/candle-time";
+import QuarterCandle from "@/models/quarter-candle.model";
 
-    const length = candles.length;
+//=======================================================================//
+//                             DETECT OB                                 //
+//=======================================================================//
+
+export default async function detectOB(bos) {
+
+    const {
+        type,
+        fvgs = [],
+    } = bos;
+
+    //===================================================================//
+    //                         FETCH CANDLES                             //
+    //===================================================================//
+
+    const startTime = convertOneMinToFifteen(
+        bos.startTime - 900
+    );
+
+    const endTime = convertOneMinToFifteen(
+        bos.endTime
+    );
+
+    const candles = await QuarterCandle
+        .find({
+            time: {
+                $gte: startTime,
+                $lte: endTime,
+            },
+        })
+        .sort({
+            time: 1,
+        })
+        .lean();
+
+    if (candles.length === 0) {
+        return [];
+    }
+
+    //===================================================================//
+    //                         CONFIG                                     //
+    //===================================================================//
+
+    const lastCandleIndex = candles[candles.length - 1].index;
+
+    let startIndex = candles[0].index;
+
     const obs = [];
-    const ob = {index: 0, base: null, update: null, break: null, top: 0, bottom: 0, use: null, fvgs: []};
 
-    let i = candles[0].index;
+    //===================================================================//
+    //                         MAIN LOOP                                  //
+    //===================================================================//
 
-    while (i < candles[length - 1].index) {
+    while (startIndex <= lastCandleIndex) {
 
-        if (type === 'bullish') {
+        const filteredCandles = candles.filter(
+            (candle) => candle.index >= startIndex
+        );
 
-            ob.base = candles.reduce((lowestCandle, candle) => {
+        if (filteredCandles.length === 0) {
+            break;
+        }
 
-                if (candle.low < lowestCandle.low) {
+        //===============================================================//
+        //                         CREATE OB                              //
+        //===============================================================//
 
-                    if (candle.close >= candle.open) return lowestCandle;
+        const ob = {
+            type,
+            index: 0,
+            base: null,
+            update: null,
+            break: null,
+            top: 0,
+            bottom: 0,
+            use: false,
+            fvgs: [],
+        };
 
-                }
+        //===============================================================//
+        //                         BULLISH                                //
+        //===============================================================//
 
-                if (!lowestCandle) return candle;
+        if (type === "bullish") {
 
-            }, null);
+            //===========================================================//
+            // FIND BASE
+            // بین کندل‌های bearish، کمترین low
+            //===========================================================//
+
+            ob.base = filteredCandles.reduce(
+                (lowestCandle, candle) => {
+
+                    // فقط bearish
+                    if (candle.close >= candle.open) {
+                        return lowestCandle;
+                    }
+
+                    // اولین bearish
+                    if (!lowestCandle) {
+                        return candle;
+                    }
+
+                    // bearish با low پایین‌تر
+                    if (candle.low < lowestCandle.low) {
+                        return candle;
+                    }
+
+                    return lowestCandle;
+
+                },
+                null
+            );
+
+            //===========================================================//
+            // FIND UPDATE / BREAK
+            //===========================================================//
 
             if (ob.base) {
 
-                for (let k = ob.base.index + 1; k < candles[length - 1].index; k++) {
+                for (
+                    let k = 0;
+                    k < filteredCandles.length;
+                    k++
+                ) {
+
+                    const candle = filteredCandles[k];
+
+                    // قبل از base را بررسی نکن
+                    if (candle.index <= ob.base.index) {
+                        continue;
+                    }
 
                     if (ob.update) {
 
-                        if (candles[k].high > ob.update.high) {
+                        if (candle.high > ob.update.high) {
 
-                            if (candles[k].close > ob.update.high) {
-                                ob.break = candles[k];
+                            if (candle.close > ob.update.high) {
+
+                                ob.break = candle;
+
                                 break;
+
                             } else {
-                                ob.update = candles[k];
+
+                                ob.update = candle;
+
                             }
 
                         }
+
                     } else {
 
-                        if (candles[k].high > ob.base.high) {
+                        if (candle.high > ob.base.high) {
 
-                            if (candles[k].close > ob.base.high) {
-                                ob.break = candles[k];
+                            if (candle.close > ob.base.high) {
+
+                                ob.break = candle;
+
                                 break;
+
                             } else {
-                                ob.update = candles[k];
+
+                                ob.update = candle;
+
                             }
 
                         }
@@ -57,97 +176,192 @@ export default function detectOB(type, candles, fvgs) {
 
             }
 
-            if (ob.break && ob.update === null && fvgs.length !== 0) {
+            //===========================================================//
+            // FVG
+            //===========================================================//
 
-                const nextFVGs = fvgs.filter(fvg => fvg.index >= ob.break.index);
+            if (
+                ob.break &&
+                ob.update === null &&
+                fvgs.length !== 0
+            ) {
+
+                const nextFVGs = fvgs.filter(
+                    (fvg) => fvg.index >= ob.break.index
+                );
 
                 for (const fvg of nextFVGs) {
 
                     if (fvg.low <= ob.base.high) {
+
                         ob.top = ob.base.high;
                         ob.bottom = ob.base.low;
+
                         break;
+
                     } else {
+
                         ob.top = ob.base.open;
                         ob.bottom = ob.base.low;
+
                         break;
+
                     }
 
                 }
 
-                for (let x = close.index + 1; x < candles.length; x++) {
+                //=======================================================//
+                // CHECK USE
+                //=======================================================//
 
-                    if (candles[x].low < ob.top) {
+                for (
+                    let x = filteredCandles.findIndex(
+                        (candle) => candle.index === ob.break.index
+                    ) + 1;
+
+                    x < filteredCandles.length;
+
+                    x++
+                ) {
+
+                    if (filteredCandles[x].low < ob.top) {
+
                         ob.use = true;
+
                         break;
+
                     }
 
                 }
 
-            } else if (ob.break && ob.update) {
+            }
+
+                //===========================================================//
+                // BREAK + UPDATE
+            //===========================================================//
+
+            else if (
+                ob.break &&
+                ob.update
+            ) {
 
                 ob.top = ob.base.open;
                 ob.bottom = ob.base.low;
 
-                for (let x = close.index + 1; x < candles.length; x++) {
+                //=======================================================//
+                // CHECK USE
+                //=======================================================//
 
-                    if (candles[x].low < ob.top) {
+                for (
+                    let x = filteredCandles.findIndex(
+                        (candle) => candle.index === ob.break.index
+                    ) + 1;
+
+                    x < filteredCandles.length;
+
+                    x++
+                ) {
+
+                    if (filteredCandles[x].low < ob.top) {
+
                         ob.use = true;
+
                         break;
+
                     }
 
                 }
 
             }
 
-            if (ob.break) i = ob.break.index + 1;
+        }
 
-            obs.push(ob);
+            //================================================================//
+            //                         BEARISH                                //
+            //================================================================//
 
-            ob.index = 0;
-            ob.base = ob.update = ob.break = null;
-            ob.use = false;
-            ob.top = ob.bottom = 0;
+        else {
 
-        } else {
+            //===========================================================//
+            // FIND BASE
+            // بین کندل‌های bullish، بیشترین high
+            //===========================================================//
 
-            ob.base = candles.reduce((highestCandle, candle) => {
+            ob.base = filteredCandles.reduce(
+                (highestCandle, candle) => {
 
-                if (candle.high > highestCandle.high) {
+                    // فقط bullish
+                    if (candle.close <= candle.open) {
+                        return highestCandle;
+                    }
 
-                    if (candle.close <= candle.open) return highestCandle;
+                    // اولین bullish
+                    if (!highestCandle) {
+                        return candle;
+                    }
 
-                }
+                    // bullish با high بالاتر
+                    if (candle.high > highestCandle.high) {
+                        return candle;
+                    }
 
-                if (!highestCandle) return candle;
+                    return highestCandle;
 
-            }, null);
+                },
+                null
+            );
+
+            //===========================================================//
+            // FIND UPDATE / BREAK
+            //===========================================================//
 
             if (ob.base) {
 
-                for (let k = ob.base.index + 1; k < candles[length - 1].index; k++) {
+                for (
+                    let k = 0;
+                    k < filteredCandles.length;
+                    k++
+                ) {
+
+                    const candle = filteredCandles[k];
+
+                    // قبل از base را بررسی نکن
+                    if (candle.index <= ob.base.index) {
+                        continue;
+                    }
 
                     if (ob.update) {
 
-                        if (candles[k].low < ob.update.low) {
+                        if (candle.low < ob.update.low) {
 
-                            if (candles[k].close < ob.update.low) {
-                                ob.break = candles[k];
+                            if (candle.close < ob.update.low) {
+
+                                ob.break = candle;
+
                                 break;
+
                             } else {
-                                ob.update = candles[k];
+
+                                ob.update = candle;
+
                             }
 
                         }
+
                     } else {
 
-                        if (candles[k].low < ob.base.low) {
+                        if (candle.low < ob.base.low) {
 
-                            if (candles[k].close < ob.base.low) {
-                                ob.break = candles[k];
+                            if (candle.close < ob.base.low) {
+
+                                ob.break = candle;
+
                                 break;
+
                             } else {
-                                ob.update = candles[k];
+
+                                ob.update = candle;
+
                             }
 
                         }
@@ -158,89 +372,138 @@ export default function detectOB(type, candles, fvgs) {
 
             }
 
-            if (ob.break && ob.update === null && fvgs.length !== 0) {
+            //===========================================================//
+            // FVG
+            //===========================================================//
 
-                const nextFVGs = fvgs.filter(fvg => fvg.index >= ob.break.index);
+            if (
+                ob.break &&
+                ob.update === null &&
+                fvgs.length !== 0
+            ) {
+
+                const nextFVGs = fvgs.filter(
+                    (fvg) => fvg.index >= ob.break.index
+                );
 
                 for (const fvg of nextFVGs) {
 
                     if (fvg.high >= ob.base.low) {
+
                         ob.top = ob.base.high;
                         ob.bottom = ob.base.low;
+
                         break;
+
                     } else {
+
                         ob.top = ob.base.high;
                         ob.bottom = ob.base.open;
+
                         break;
+
                     }
 
                 }
 
-                for (let x = close.index + 1; x < candles.length; x++) {
+                //=======================================================//
+                // CHECK USE
+                //=======================================================//
 
-                    if (candles[x].high > ob.bottom) {
+                for (
+                    let x = filteredCandles.findIndex(
+                        (candle) => candle.index === ob.break.index
+                    ) + 1;
+
+                    x < filteredCandles.length;
+
+                    x++
+                ) {
+
+                    if (filteredCandles[x].high > ob.bottom) {
+
                         ob.use = true;
+
                         break;
+
                     }
 
                 }
 
-            } else if (ob.break && ob.update) {
-
-                for (let x = close.index + 1; x < candles.length; x++) {
-
-                    if (candles[x].high > ob.base.open) {
-                        ob.top = ob.base.high;
-                        ob.bottom = ob.base.open;
-                    }
-
-                }
             }
 
-            if (ob.break) i = ob.break.index;
+             //===========================================================//
+             // BREAK + UPDATE
+             //===========================================================//
 
-            obs.push(ob);
+            else if (
+                ob.break &&
+                ob.update
+            ) {
 
-            ob.index = 0;
-            ob.base = ob.update = ob.break = null;
-            ob.use = false;
-            ob.fvgs = [];
+                ob.top = ob.base.high;
+                ob.bottom = ob.base.open;
+
+                //=======================================================//
+                // CHECK USE
+                //=======================================================//
+
+                for (
+                    let x = filteredCandles.findIndex(
+                        (candle) => candle.index === ob.break.index
+                    ) + 1;
+
+                    x < filteredCandles.length;
+
+                    x++
+                ) {
+
+                    if (filteredCandles[x].high > ob.bottom) {
+
+                        ob.use = true;
+
+                        break;
+
+                    }
+
+                }
+
+            }
 
         }
 
+        //===============================================================//
+        //                    NO BASE = STOP                             //
+        //===============================================================//
+
+        if (!ob.base) {
+            break;
+        }
+
+        //===============================================================//
+        //                         OB INDEX                              //
+        //===============================================================//
+
+        ob.index = ob.base.index;
+
+        //===============================================================//
+        //                         SAVE OB                               //
+        //===============================================================//
+
+        obs.push(ob);
+
+        //===============================================================//
+        //                   MOVE TO NEXT OB                             //
+        //===============================================================//
+
+        if (!ob.break) {
+            break;
+        }
+
+        // مهم:
+        // جستجوی OB بعدی از candle بعد از break شروع می‌شود.
+        startIndex = ob.break.index + 1;
     }
 
     return obs;
-
-}
-
-function findBase(candles) {
-    if (!candles || candles.length === 0) return null;
-
-    let lowestIndex = 0;
-    for (let i = 1; i < candles.length; i++) {
-        if (candles[i].low < candles[lowestIndex].low) {
-            lowestIndex = i;
-        }
-    }
-
-    const lowestCandle = candles[lowestIndex];
-    const isBearish = (c) => c.close < c.open;
-
-
-    if (isBearish(lowestCandle)) {
-        return lowestCandle;
-    }
-
-
-    let result = null;
-    for (let i = lowestIndex + 1; i < candles.length; i++) {
-        const candle = candles[i];
-        if (!isBearish(candle)) continue;
-        if (!result || candle.low < result.low) {
-            result = candle;
-        }
-    }
-
-    return result;
 }

@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import mongoosePaginate from "mongoose-paginate-v2";
 
-import bosSchema from "./bos.schema";
+import bosSchema from "@/models/bos.schema";
 
 
 bosSchema.plugin(mongoosePaginate);

@@ -18,11 +18,20 @@ export default async function fetchMinuteCandles({
                                                  } = {}) {
 
 
-    const now = Math.floor(Date.now() / 1000);
+    const now = Math.floor(Date.now() / 1000) - 600;
 
 
-    const url = `${farazConfig.url}?symbolName=${symbol}&resolution=1&from=${beginTime}&to=${now}&countback=${countback}&firstDataRequest=true&latest=true&adjustType=2&json=true`;
-
+    const url =
+        `${farazConfig.url}` +
+        `?symbolName=${symbol}` +
+        `&resolution=1` +
+        `&from=${beginTime}` +
+        `&to=${now}` +
+        `&countback=${countback}` +
+        `&firstDataRequest=true` +
+        `&latest=true` +
+        `&adjustType=2` +
+        `&json=true`;
 
     const response = await axios.get(url, {
         headers: farazConfig.headers, withCredentials: true

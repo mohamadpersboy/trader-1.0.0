@@ -9,18 +9,28 @@ export default async function fetchQuarterCandles({
 
                                                       symbol = farazConfig.symbol,
 
+                                                      countback = 1440,
+
                                                       beginTime = Math.floor(Date.now() / 1000) - 1,
 
-                                                      lastIndex = 0
+                                                      lastIndex = 0,
 
                                                   } = {}) {
 
 
     const now = Math.floor(Date.now() / 1000);
 
-
-    const url = `${farazConfig.url}?symbolName=${symbol}&resolution=15&from=${beginTime}&to=${now}&firstDataRequest=false&latest=false&adjustType=0&json=true&cc=2`;
-
+    const url =
+        `${farazConfig.url}` +
+        `?symbolName=${symbol}` +
+        `&resolution=15` +
+        `&from=${beginTime}` +
+        `&to=${now}` +
+        `&countback=${countback}` +
+        `&firstDataRequest=true` +
+        `&latest=true` +
+        `&adjustType=2` +
+        `&json=true`;
 
     const response = await axios.get(url, {
         headers: farazConfig.headers, withCredentials: true
