@@ -7,6 +7,7 @@ import QuarterCandle from "@/models/quarter-candle.model";
 
 export default async function detectOB(bos) {
 
+
     const {
         type,
         fvgs = [],

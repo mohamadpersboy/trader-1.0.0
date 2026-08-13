@@ -13,19 +13,6 @@ import ObModel from "@/models/ob.model";
 //                             DETECT BOS                                //
 //=======================================================================//
 
-// خروجی detectBos همیشه یک شکل ثابت داره (نه گاهی bos، نه گاهی آرایه‌ی
-// candles، نه گاهی {candlesProcessed, bosProcessed}) تا caller ها
-// (bos/route.js و runtime.service.js) بتونن یکسان و بدون حدس زدن نوع
-// خروجی، checkpoint (config.lastBosCheckIndex) رو آپدیت کنن:
-//
-//   { lastIndex, candlesProcessed, bosProcessed, stoppedEarly, reason, bos }
-//
-// lastIndex = ایندکس آخرین کندلی که واقعاً بررسی شد (چه BOS ای پیدا شده
-// باشه چه نه) - این همون مقداریه که باید به‌عنوان checkpoint بعدی ذخیره بشه.
-// stoppedEarly یعنی قبل از رسیدن به آخر بازه‌ی کندل‌ها، به‌خاطر یک FVG/OB
-// هنوز تأییدنشده متوقف شدیم؛ candlesProcessed/lastIndex در این حالت هم
-// معتبرن (تا همون کندل که متوقف شدیم)، پس checkpoint درست پیش می‌ره.
-
 export async function detectBos(fromIndex = 0) {
     const {
         bearishBOS,
@@ -63,20 +50,22 @@ export async function detectBos(fromIndex = 0) {
             continue;
         }
 
+        const bosData = bos.toObject();
+
         bosProcessed++;
 
         //===============================================================
         // CHECK CHOCH
         //===============================================================
 
-        const isMatched = await isLastChochSameAsBosType(bos);
+        const isMatched = await isLastChochSameAsBosType(bosData);
 
         if (isMatched) {
-            bos.isMatched = true;
+            bosData.isMatched = true;
 
             await BosModel.updateOne(
                 {
-                    _id: bos._id,
+                    _id: bosData._id,
                 },
                 {
                     $set: {
@@ -92,81 +81,91 @@ export async function detectBos(fromIndex = 0) {
         // DETECT FVG
         //===============================================================
 
-        const fvgs = await detectFVG(bos);
+        // const fvgs = await detectFVG(bosData);
+        //
+        // await FvgModel.findOneAndUpdate(
+        //     {
+        //         bosId: bos._id,
+        //     },
+        //     {
+        //         $set: {
+        //             bosId: bos._id,
+        //             fvgs,
+        //         },
+        //     },
+        //     {
+        //         upsert: true,
+        //         new: true,
+        //         setDefaultsOnInsert: true,
+        //     }
+        // );
+        //
+        // const hasPendingFvg = fvgs.some(
+        //     (fvg) => fvg.use === false
+        // );
+        //
+        // if (hasPendingFvg) {
+        //     return {
+        //         lastIndex,
+        //         candlesProcessed: i + 1,
+        //         bosProcessed,
+        //         stoppedEarly: true,
+        //         reason: "pending-fvg",
+        //         bos,
+        //     };
+        // }
+        //
+        // //===============================================================
+        // // DETECT OB
+        // //===============================================================
+        //
+        // const obs = await detectOB({
+        //     ...bosData,
+        //     fvgs,
+        // });
+        //
+        //
+        // await ObModel.findOneAndUpdate(
+        //     {
+        //         bosId: bosData._id,
+        //     },
+        //     {
+        //         $set: {
+        //             bosId: bosData._id,
+        //             obs,
+        //         },
+        //     },
+        //     {
+        //         upsert: true,
+        //         new: true,
+        //         setDefaultsOnInsert: true,
+        //     }
+        // );
+        //
+        // // حداقل یک OB هنوز استفاده نشده
+        // const hasPendingOb = obs.some(
+        //     (ob) => ob.use === false
+        // );
 
-        await FvgModel.findOneAndUpdate(
-            {
-                bosId: bos._id,
-            },
-            {
-                $set: {
-                    bosId: bos._id,
-                    fvgs,
-                },
-            },
-            {
-                upsert: true,
-                new: true,
-                setDefaultsOnInsert: true,
-            }
-        );
+        // if (hasPendingOb) {
+        //     return {
+        //         lastIndex,
+        //         candlesProcessed: i + 1,
+        //         bosProcessed,
+        //         stoppedEarly: true,
+        //         reason: "pending-ob",
+        //         bos,
+        //     };
+        // }
 
-        const hasPendingFvg = fvgs.some(
-            (fvg) => fvg.use === false
-        );
-
-        if (hasPendingFvg) {
-            return {
-                lastIndex,
-                candlesProcessed: i + 1,
-                bosProcessed,
-                stoppedEarly: true,
-                reason: "pending-fvg",
-                bos,
-            };
-        }
-
-        //===============================================================
-        // DETECT OB
-        //===============================================================
-
-        const obs = await detectOB({
-            ...bos,
-            fvgs,
-        });
-
-        await ObModel.findOneAndUpdate(
-            {
-                bosId: bos._id,
-            },
-            {
-                $set: {
-                    bosId: bos._id,
-                    obs,
-                },
-            },
-            {
-                upsert: true,
-                new: true,
-                setDefaultsOnInsert: true,
-            }
-        );
-
-        // حداقل یک OB هنوز استفاده نشده
-        const hasPendingOb = obs.some(
-            (ob) => ob.use === false
-        );
-
-        if (hasPendingOb) {
-            return {
-                lastIndex,
-                candlesProcessed: i + 1,
-                bosProcessed,
-                stoppedEarly: true,
-                reason: "pending-ob",
-                bos,
-            };
-        }
+        return {
+            lastIndex,
+            candlesProcessed: i + 1,
+            bosProcessed,
+            stoppedEarly: true,
+            reason: "pending-ob",
+            bosData,
+        };
 
     }
 
@@ -543,7 +542,7 @@ export async function bosDetector(candle, bearishBOS, bullishBOS) {
 
                 if (bearishBOS.update.low > candle.close) {
 
-                    await closeBearishBOS(
+                    return await closeBearishBOS(
                         candle,
                         bearishBOS,
                         bullishBOS
@@ -563,7 +562,7 @@ export async function bosDetector(candle, bearishBOS, bullishBOS) {
 
                 if (bearishBOS.open.low > candle.close) {
 
-                    await closeBearishBOS(
+                    return await closeBearishBOS(
                         candle,
                         bearishBOS,
                         bullishBOS
@@ -589,7 +588,7 @@ export async function bosDetector(candle, bearishBOS, bullishBOS) {
 
                 if (bullishBOS.update.high < candle.close) {
 
-                    await closeBullishBOS(
+                    return await closeBullishBOS(
                         candle,
                         bullishBOS,
                         bearishBOS
@@ -609,7 +608,7 @@ export async function bosDetector(candle, bearishBOS, bullishBOS) {
 
                 if (bullishBOS.open.high < candle.close) {
 
-                    await closeBullishBOS(
+                    return await closeBullishBOS(
                         candle,
                         bullishBOS,
                         bearishBOS
@@ -1030,62 +1029,27 @@ async function isLastChochSameAsBosType(bos) {
 
     const result = await QuarterChoch.aggregate([
         {
-            $match: {
-                $or: [
-                    {
-                        "bearishCh.time": {
-                            $gt: startTime,
-                            $lt: endTime,
-                        },
-                    },
-                    {
-                        "bullishCh.time": {
-                            $gt: startTime,
-                            $lt: endTime,
-                        },
-                    },
+            $project: {
+                type: 1,
+
+                chochs: [
+                    "$bearishCh",
+                    "$bullishCh",
                 ],
             },
         },
 
         {
-            $project: {
-                chochs: {
-                    $filter: {
-                        input: [
-                            "$bearishCh",
-                            "$bullishCh",
-                        ],
-                        as: "choch",
-                        cond: {
-                            $and: [
-                                {
-                                    $ne: [
-                                        "$$choch",
-                                        null,
-                                    ],
-                                },
-                                {
-                                    $gt: [
-                                        "$$choch.time",
-                                        startTime,
-                                    ],
-                                },
-                                {
-                                    $lt: [
-                                        "$$choch.time",
-                                        endTime,
-                                    ],
-                                },
-                            ],
-                        },
-                    },
-                },
-            },
+            $unwind: "$chochs",
         },
 
         {
-            $unwind: "$chochs",
+            $match: {
+                "chochs.time": {
+                    $gt: startTime,
+                    $lt: endTime,
+                },
+            },
         },
 
         {
@@ -1101,7 +1065,7 @@ async function isLastChochSameAsBosType(bos) {
         {
             $project: {
                 _id: 0,
-                type: "$chochs.type",
+                type: 1,
                 time: "$chochs.time",
             },
         },
