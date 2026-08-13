@@ -5,7 +5,6 @@ import QuarterCandle from "@/models/quarter-candle.model";
 
 import detectFVG from "@/services/fvg/fvg.service";
 import detectOB from "@/services/ob/ob.service";
-import MinuteCandle from "@/models/minute-candle.model";
 
 
 export async function GET() {
@@ -23,7 +22,7 @@ export async function GET() {
             .sort({
                 index: 1,
             })
-            .limit(50)
+            .limit(1000)
             .lean();
 
 
@@ -62,8 +61,7 @@ export async function GET() {
         // DETECT FVG
         //===============================================================
 
-        const fvgs = [];
-        // const fvgs = await detectFVG(bos);
+        const fvgs = await detectFVG(bos);
 
 
         //===============================================================

@@ -77,7 +77,7 @@ export default async function detectOB(bos) {
             top: 0,
             bottom: 0,
             use: false,
-            fvgs: [],
+            fvg: null ,
         };
 
         //===============================================================//
@@ -196,6 +196,8 @@ export default async function detectOB(bos) {
 
                         ob.top = ob.base.high;
                         ob.bottom = ob.base.low;
+
+                        ob.fvg = fvg;
 
                         break;
 
@@ -392,6 +394,8 @@ export default async function detectOB(bos) {
 
                         ob.top = ob.base.high;
                         ob.bottom = ob.base.low;
+
+                        ob.fvg = fvg;
 
                         break;
 

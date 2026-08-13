@@ -95,9 +95,9 @@ const obItemSchema = new Schema(
             default: false,
         },
 
-        fvgs: {
-            type: [Schema.Types.ObjectId],
-            default: [],
+        fvg: {
+            type: Schema.Types.ObjectId,
+            default: null,
         },
     },
     {
