@@ -13,6 +13,19 @@ import ObModel from "@/models/ob.model";
 //                             DETECT BOS                                //
 //=======================================================================//
 
+// خروجی detectBos همیشه یک شکل ثابت داره (نه گاهی bos، نه گاهی آرایه‌ی
+// candles، نه گاهی {candlesProcessed, bosProcessed}) تا caller ها
+// (bos/route.js و runtime.service.js) بتونن یکسان و بدون حدس زدن نوع
+// خروجی، checkpoint (config.lastBosCheckIndex) رو آپدیت کنن:
+//
+//   { lastIndex, candlesProcessed, bosProcessed, stoppedEarly, reason, bos }
+//
+// lastIndex = ایندکس آخرین کندلی که واقعاً بررسی شد (چه BOS ای پیدا شده
+// باشه چه نه) - این همون مقداریه که باید به‌عنوان checkpoint بعدی ذخیره بشه.
+// stoppedEarly یعنی قبل از رسیدن به آخر بازه‌ی کندل‌ها، به‌خاطر یک FVG/OB
+// هنوز تأییدنشده متوقف شدیم؛ candlesProcessed/lastIndex در این حالت هم
+// معتبرن (تا همون کندل که متوقف شدیم)، پس checkpoint درست پیش می‌ره.
+
 export async function detectBos(fromIndex = 0) {
     const {
         bearishBOS,
@@ -32,7 +45,14 @@ export async function detectBos(fromIndex = 0) {
 
     let processedBos = 0;
 
-    for (const candle of candles) {
+    let lastIndex = fromIndex;
+
+    for (let i = 0; i < candles.length; i++) {
+
+        const candle = candles[i];
+
+        lastIndex = candle.index;
+
         const bos = await bosDetector(
             candle,
             bearishBOS,
@@ -91,12 +111,19 @@ export async function detectBos(fromIndex = 0) {
             }
         );
 
-        const isFvgConfirmed = fvgs.some(
+        const hasPendingFvg = fvgs.some(
             (fvg) => fvg.use === false
         );
 
-        if (isFvgConfirmed) {
-            return bos;
+        if (hasPendingFvg) {
+            return {
+                lastIndex,
+                candlesProcessed: i + 1,
+                bosProcessed,
+                stoppedEarly: true,
+                reason: "pending-fvg",
+                bos,
+            };
         }
 
         //===============================================================
@@ -126,19 +153,28 @@ export async function detectBos(fromIndex = 0) {
         );
 
         // حداقل یک OB هنوز استفاده نشده
-        const isObConfirmed = obs.some(
+        const hasPendingOb = obs.some(
             (ob) => ob.use === false
         );
 
-        if (isObConfirmed) {
-            return bos;
+        if (hasPendingOb) {
+            return {
+                lastIndex,
+                candlesProcessed: i + 1,
+                bosProcessed,
+                stoppedEarly: true,
+                reason: "pending-ob",
+                bos,
+            };
         }
 
     }
 
     return {
+        lastIndex,
         candlesProcessed: candles.length,
-        bosProcessed: processedBos,
+        bosProcessed,
+        stoppedEarly: false,
     };
 }
 
