@@ -158,15 +158,6 @@ export async function detectBos(fromIndex = 0) {
         //     };
         // }
 
-        return {
-            lastIndex,
-            candlesProcessed: i + 1,
-            bosProcessed,
-            stoppedEarly: true,
-            reason: "pending-ob",
-            bosData,
-        };
-
     }
 
     return {
