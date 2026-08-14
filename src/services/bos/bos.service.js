@@ -81,82 +81,59 @@ export async function detectBos(fromIndex = 0) {
         // DETECT FVG
         //===============================================================
 
-        // const fvgs = await detectFVG(bosData);
-        //
-        // await FvgModel.findOneAndUpdate(
-        //     {
-        //         bosId: bos._id,
-        //     },
-        //     {
-        //         $set: {
-        //             bosId: bos._id,
-        //             fvgs,
-        //         },
-        //     },
-        //     {
-        //         upsert: true,
-        //         new: true,
-        //         setDefaultsOnInsert: true,
-        //     }
-        // );
-        //
-        // const hasPendingFvg = fvgs.some(
-        //     (fvg) => fvg.use === false
-        // );
-        //
-        // if (hasPendingFvg) {
-        //     return {
-        //         lastIndex,
-        //         candlesProcessed: i + 1,
-        //         bosProcessed,
-        //         stoppedEarly: true,
-        //         reason: "pending-fvg",
-        //         bos,
-        //     };
-        // }
-        //
-        // //===============================================================
-        // // DETECT OB
-        // //===============================================================
-        //
-        // const obs = await detectOB({
-        //     ...bosData,
-        //     fvgs,
-        // });
-        //
-        //
-        // await ObModel.findOneAndUpdate(
-        //     {
-        //         bosId: bosData._id,
-        //     },
-        //     {
-        //         $set: {
-        //             bosId: bosData._id,
-        //             obs,
-        //         },
-        //     },
-        //     {
-        //         upsert: true,
-        //         new: true,
-        //         setDefaultsOnInsert: true,
-        //     }
-        // );
-        //
-        // // حداقل یک OB هنوز استفاده نشده
-        // const hasPendingOb = obs.some(
-        //     (ob) => ob.use === false
-        // );
+        const fvgs = await detectFVG(bosData);
 
-        // if (hasPendingOb) {
-        //     return {
-        //         lastIndex,
-        //         candlesProcessed: i + 1,
-        //         bosProcessed,
-        //         stoppedEarly: true,
-        //         reason: "pending-ob",
-        //         bos,
-        //     };
-        // }
+        await FvgModel.findOneAndUpdate(
+            {
+                bosId: bosData._id,
+            },
+            {
+                $set: {
+                    bosId: bosData._id,
+                    fvgs,
+                },
+            },
+            {
+                upsert: true,
+                new: true,
+                setDefaultsOnInsert: true,
+            }
+        );
+
+        //===============================================================
+        // DETECT OB
+        //===============================================================
+
+        const obs = await detectOB({
+            ...bosData,
+            fvgs,
+        });
+
+
+        await ObModel.findOneAndUpdate(
+            {
+                bosId: bosData._id,
+            },
+            {
+                $set: {
+                    bosId: bosData._id,
+                    obs,
+                },
+            },
+            {
+                upsert: true,
+                new: true,
+                setDefaultsOnInsert: true,
+            }
+        );
+
+        // توجه: قبلاً اینجا اگه FVG یا OB ای پیدا می‌شد که هنوز use=false
+        // بود (یعنی هنوز "مصرف" نشده)، کل detectBos زودتر متوقف می‌شد
+        // (return). این باعث می‌شد با اولین BOS ای که FVG/OB تأییدنشده
+        // داشت، حلقه کاملاً قطع بشه و بقیه‌ی کندل‌ها اصلاً بررسی نشن - که
+        // دقیقاً همون چیزیه که باعث می‌شد به‌جای ~۵۰ تا BOS فقط ۴-۶ تا پیدا
+        // بشه. الان FVG/OB هر BOS محاسبه و ذخیره می‌شه، ولی حلقه متوقف
+        // نمی‌شه و به بررسی بقیه‌ی کندل‌ها ادامه می‌ده.
 
     }
 
